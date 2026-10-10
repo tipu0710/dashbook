@@ -1,0 +1,52 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "rocket_phone_contact",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "rocket_phone_contact (initial load error)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "toolArgs": [
+                "--dart-define=MOCK_FAIL_PAGE=1"
+            ]
+        },
+        {
+            "name": "rocket_phone_contact (pagination error)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "toolArgs": [
+                "--dart-define=MOCK_FAIL_PAGE=2"
+            ]
+        },
+        {
+            "name": "rocket_phone_contact (30% random failures)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "toolArgs": [
+                "--dart-define=MOCK_FAILURE_PERCENT=30"
+            ]
+        },
+        {
+            "name": "rocket_phone_contact (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "rocket_phone_contact (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}
