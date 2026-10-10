@@ -40,7 +40,7 @@ The tradeoff is additional setup through GetIt, Injectable, and generated regist
 
 ```text
 lib/
-  app/
+  core/
     di/                 GetIt + Injectable composition
     theme/              Parent palette, ThemeData factory, appearance Cubit
   features/contacts/
