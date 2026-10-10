@@ -78,7 +78,14 @@ lib/
 
 ## With another 2–3 hours
 
-- Replace the mock with a real HTTP client that supports request cancellation.
-- Add local caching to show previous results while a refresh is loading.
-- Add integration tests on a real device.
-- Save the selected theme between app launches.
+In priority order:
+
+1. **CI pipeline.** A GitHub Actions workflow that runs `dart format --set-exit-if-changed`, `flutter analyze` and `flutter test` with coverage on every push and PR, and fails if the generated files are out of date. Everything after this is safer to change once it exists.
+2. **Real HTTP data source with cancellation.** Add a `RemoteContactsDataSource` (Dio) next to the mock and pick one with a `--dart-define`. Pass a `CancelToken` per request so a new query or refresh cancels the old request instead of only ignoring its response. Add a timeout and parse JSON in an isolate for large pages.
+3. **Typed failures.** Replace the single `ContactsFailure` message with `offline`, `timeout` and `server` cases, so the UI can show "You're offline" with a retry, and only real server errors read as "something went wrong".
+4. **Per-query cache.** Keep the first page of recent queries in a small in-memory LRU in the repository. Going back to an earlier query shows results instantly, and pull-to-refresh keeps the cached list visible while it reloads (stale-while-revalidate).
+5. **Contact actions.** Make each tile tappable with call, message and copy-number actions (`url_launcher`), and highlight the part of the name or number that matches the search.
+6. **Integration test on a device.** One `integration_test` flow: search, scroll to load page 2, force a pagination error, retry, pull to refresh. Run it in CI on an Android emulator.
+7. **Small polish.** Save the selected theme with `shared_preferences`, and move UI strings into ARB files so the app is ready for localisation.
+
+Out of scope for this time box, but next after that: an offline database (Drift) as the source of truth, alphabetical section headers with a fast-scroll index, and crash and error reporting (Sentry or Crashlytics) behind a logging interface.
