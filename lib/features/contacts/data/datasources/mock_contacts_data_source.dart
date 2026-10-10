@@ -29,13 +29,9 @@ class MockContactsDataSource implements ContactsDataSource {
 
   final Future<String> Function() loadJson;
 
-  /// Fixed delay for deterministic tests; when null, each request takes a
-  /// random 500, 700 or 1000 ms so overlapping requests can complete out of
-  /// order.
   final Duration? latency;
   final int failOnceOnPage;
 
-  /// Chance (0–100) that any request fails, to exercise error states manually.
   final int failurePercent;
   final Random _random;
   bool _didFail = false;
@@ -66,7 +62,6 @@ class MockContactsDataSource implements ContactsDataSource {
     if (page < 1 || limit < 1) {
       throw ArgumentError('Page and limit must be positive.');
     }
-    // Capture failure at request time so overlapping requests remain deterministic.
     final failOnce = page == failOnceOnPage && !_didFail;
     if (failOnce) _didFail = true;
     final shouldFail = failOnce || _random.nextInt(100) < failurePercent;
@@ -78,7 +73,7 @@ class MockContactsDataSource implements ContactsDataSource {
     try {
       dataset = await (_dataset ??= _load());
     } catch (_) {
-      _dataset = null; // A failed asset read must be retryable too.
+      _dataset = null;
       rethrow;
     }
     final query = search.trim().toLowerCase();
@@ -87,7 +82,6 @@ class MockContactsDataSource implements ContactsDataSource {
       matches = dataset;
     } else {
       final phoneQuery = query.replaceAll(_nonPhoneChars, '');
-      // A bare "+" would match every number, so require at least one digit.
       final matchPhone = phoneQuery.contains(_digit);
       matches = dataset
           .where(
