@@ -1,22 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../cubit/contacts_state.dart';
 import 'theme_menu.dart';
 
 class ContactsHeader extends StatelessWidget {
-  const ContactsHeader({
-    super.key,
-    required this.state,
-    required this.searchController,
-    required this.onSearchChanged,
-    required this.onClearSearch,
-    required this.onRefresh,
-  });
-  final ContactsState state;
-  final TextEditingController searchController;
-  final ValueChanged<String> onSearchChanged;
-  final VoidCallback onClearSearch;
-  final Future<void> Function() onRefresh;
+  const ContactsHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -70,39 +57,7 @@ class ContactsHeader extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: searchController,
-            onChanged: onSearchChanged,
-            textInputAction: TextInputAction.search,
-            autocorrect: false,
-            decoration: InputDecoration(
-              hintText: 'Search by name or phone',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: state.query.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Clear search',
-                      onPressed: onClearSearch,
-                      icon: const Icon(Icons.close),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (state.error != null && state.contacts.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(state.error!, style: theme.textTheme.bodySmall),
-                  ),
-                  TextButton(onPressed: onRefresh, child: const Text('Retry')),
-                ],
-              ),
-            ),
+          const SizedBox(height: 16),
         ],
       ),
     );

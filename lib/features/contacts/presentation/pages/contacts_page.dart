@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/contacts_cubit.dart';
 import '../cubit/contacts_state.dart';
 import '../widgets/contact_tile.dart';
+import '../widgets/contacts_error_banner.dart';
 import '../widgets/contacts_header.dart';
 import '../widgets/contacts_placeholder.dart';
+import '../widgets/contacts_search_bar.dart';
 
 class ContactsScreen extends StatefulWidget {
   const ContactsScreen({super.key});
@@ -72,21 +74,28 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   slivers: [
-                    SliverToBoxAdapter(
-                      child: ContactsHeader(
-                        state: state,
-                        searchController: _search,
-                        onSearchChanged: context
+                    const SliverToBoxAdapter(child: ContactsHeader()),
+                    PinnedHeaderSliver(
+                      child: ContactsSearchBar(
+                        query: state.query,
+                        controller: _search,
+                        onChanged: context
                             .read<ContactsCubit>()
                             .onSearchQueryChanged,
-                        onClearSearch: _clearSearch,
-                        onRefresh: context
-                            .read<ContactsCubit>()
-                            .refreshContacts,
+                        onClear: _clearSearch,
                       ),
                     ),
+                    if (state.error != null && state.contacts.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: ContactsErrorBanner(
+                          message: state.error!,
+                          onRetry: context
+                              .read<ContactsCubit>()
+                              .refreshContacts,
+                        ),
+                      ),
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                       sliver: SliverMainAxisGroup(
                         slivers: _slivers(context, state),
                       ),
