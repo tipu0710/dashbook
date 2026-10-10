@@ -217,7 +217,7 @@ return $default(_that.id,_that.name,_that.phone);case _:
 @JsonSerializable()
 
 class _ContactDto extends ContactDto {
-  const _ContactDto({this.id = "", this.name = "", this.phone = ""}): super._();
+  const _ContactDto({this.id = '', this.name = '', this.phone = ''}): super._();
   factory _ContactDto.fromJson(Map<String, dynamic> json) => _$ContactDtoFromJson(json);
 
 @override@JsonKey() final  String id;

@@ -49,6 +49,29 @@ void main() {
     });
   });
 
+  test('ignores whitespace-only changes to the query', () {
+    fakeAsync((clock) {
+      cubit.loadContacts();
+      repository.requests.single.succeed();
+      clock.flushMicrotasks();
+      final loaded = cubit.state;
+
+      cubit.onSearchQueryChanged('   ');
+      clock.elapse(ContactsCubit.debounceDuration);
+      expect(cubit.state, loaded);
+      expect(repository.requests, hasLength(1));
+
+      cubit.onSearchQueryChanged('al');
+      clock.elapse(ContactsCubit.debounceDuration);
+      repository.requests.last.succeed();
+      clock.flushMicrotasks();
+      cubit.onSearchQueryChanged('al ');
+      clock.elapse(ContactsCubit.debounceDuration);
+      expect(repository.requests, hasLength(2));
+      expect(cubit.state.status, ContactsStatus.success);
+    });
+  });
+
   test(
     'clears old contacts immediately and ignores a response during debounce',
     () {

@@ -21,11 +21,11 @@ class ContactsCubit extends Cubit<ContactsState> {
   Future<void> loadContacts() => _loadFirstPage();
 
   void onSearchQueryChanged(String value) {
-    if (isClosed || value == state.query) return;
+    final query = value.trim();
+    if (isClosed || query == state.query) return;
     _debounce?.cancel();
-    // Invalidate immediately, including the debounce window, and clear old results.
     ++_requestId;
-    emit(ContactsState(query: value, status: ContactsStatus.loading));
+    emit(ContactsState(query: query, status: ContactsStatus.loading));
     _debounce = Timer(debounceDuration, _loadFirstPage);
   }
 

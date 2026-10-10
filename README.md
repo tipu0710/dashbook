@@ -1,100 +1,84 @@
 # Rocket Contacts
 
-A Flutter implementation of the supplied Contacts Search assignment. Includes all 30 supplied contacts, debounced name/phone search, pagination, refresh, recoverable errors, and monochrome light/dark themes.
+A searchable contacts list with pagination, pull-to-refresh, and loading, empty and error states, backed by a mock API.
 
-## Run
+## How to run
 
-Built with **Flutter 3.47.7 stable / Dart 3.13.5**. Use this SDK or a compatible newer stable release (Freezed 4 requires Dart 3.13).
+Built with **Flutter 3.47.7 (stable)** and **Dart 3.13.5**.
 
 ```sh
 flutter pub get
 flutter run
 ```
 
-Select an Android or iOS device/emulator. No backend, account, network access, or contacts permission is required. Generated Dart files and the dependency lockfile are included.
+Generated files are committed. If you change a Freezed model or an Injectable registration, run `dart run build_runner build`.
 
-After changing Freezed models or Injectable registrations:
+### Testing error states
+
+The mock API succeeds by default. To test errors:
 
 ```sh
-dart run build_runner build
+flutter run --dart-define=MOCK_FAIL_PAGE=1          # first page fails once, then Retry works
+flutter run --dart-define=MOCK_FAIL_PAGE=2          # next page fails once (scroll down), then Retry works
+flutter run --dart-define=MOCK_FAILURE_PERCENT=30   # any request fails 30% of the time
 ```
 
-## State management and architecture
+Matching launch configurations are in `.vscode/launch.json`. Search `Nobody here` to see the empty state.
 
-### Why Cubit over Riverpod?
+### Tests
 
-**Cubit**, from the Bloc ecosystem, was chosen because this app's main complexity is coordinating closely related state transitions on one screen:
+```sh
+flutter test
+```
 
-- Search clears the previous results and resets pagination.
-- Pagination appends results while preserving loaded contacts on failure.
-- Refresh replaces results and invalidates pending pagination.
-- Older requests must not overwrite results for a newer search query.
+The tests cover the repository (search and pagination), the Cubit (debounce, out-of-order responses, duplicate requests, retries, refresh) and the main screen states.
 
-Cubit expresses these actions through explicit methods and keeps their coordination in one independently testable controller. The UI renders immutable state, while tests exercise the controller through an injected repository. `flutter_bloc` connects the UI to Cubit; GetIt and generated Injectable registrations compose dependencies at the application boundary.
+## State management: Cubit
 
-**Riverpod would also be a sound choice.** Its built-in dependency injection and asynchronous providers could reduce wiring, and a Notifier could hold the same coordinated state and actions. Cubit was preferred here for the direct method-based interface and explicit state transitions; this behavior does not require a graph of dependent providers.
+I chose Cubit (`flutter_bloc`). The hard part of this app is not sharing data between screens. It is coordinating async work on one screen: debounce, pagination, refresh, retry, and ignoring stale responses. That is a state machine, and Cubit is the most direct way to write one:
 
-The tradeoff is additional setup through GetIt, Injectable, and generated registrations. Cubit also does **not** automatically prevent request races: the `_requestId` counter and request guards in `ContactsCubit` provide that protection. The choice reflects how this implementation organizes the app's behavior, rather than an inherent advantage in correctness or performance.
+- **One owner for all transitions.** Each user action is one method (`onSearchQueryChanged`, `loadNextPage`, `refreshContacts`, `retryNextPage`). Every way the state can change is in `ContactsCubit`, so the race rules (request IDs, duplicate guards) sit in one place and can't be bypassed.
+- **The state fits a single object.** The screen shows contacts *and* "loading more" *and* a pagination error at the same time. Riverpod's `AsyncValue` models one loading/data/error result, so for this screen I would end up writing a custom state class inside a `Notifier`, which is essentially a Cubit anyway.
+- **Easy to test.** The Cubit is a plain Dart class. Tests create it with a fake repository and control time with `fake_async`, with no widget tree or provider container.
+- **Explicit over implicit.** Riverpod's strengths (auto-dispose, derived providers, caching per argument) are useful when many widgets share data. Here they would add hidden behaviour without solving a problem this screen has.
 
-### Feature-first clean architecture
+### Trade-offs I accepted
+
+- **More setup for dependency injection.** Riverpod has DI built in. With Cubit I use GetIt + Injectable, which adds code generation, and a missing registration fails at runtime instead of at compile time.
+- **No built-in caching.** A Riverpod `family` provider could cache results per search query for free. With Cubit, caching would have to be written by hand (it is in the "next steps" list).
+- **Manual async control.** Cubit does not cancel or debounce for you. I wrote the debounce timer and the request-ID check myself. A `Bloc` with event transformers could do this declaratively, but for one screen the plain Cubit is simpler to read.
+- **More boilerplate** for state classes than a small Riverpod provider would need.
+
+I would pick Riverpod in an app where many screens share and derive the same async data. For one screen with tightly coordinated async state, Cubit is the better fit.
+
+## Architecture
 
 ```text
 lib/
-  core/
-    di/                 GetIt + Injectable composition
-    theme/              Parent palette, ThemeData factory, appearance Cubit
+  core/                 dependency injection (GetIt + Injectable), theme
   features/contacts/
-    domain/             Freezed entities, repository contract, GetContacts use case
-    data/               Freezed JSON DTOs, mock API, repository implementation
-    presentation/       Cubit, immutable state, screen and reusable widgets
+    domain/             Contact entity, repository interface, GetContacts use case
+    data/               DTOs, mock data source, repository implementation
+    presentation/       ContactsCubit, state, screen and widgets
 ```
 
-The dependency flow is **UI → Cubit → use case → repository contract**. The data layer implements that contract and maps API DTOs into domain entities. Data and domain models use Freezed and JSON serialization as requested. Replace the `ContactsDataSource` registration with a REST implementation to connect a backend without changing the UI or Cubit. The domain has no dependency on Flutter widgets or the mock source.
+**UI → Cubit → Use case → Repository → Data source**
 
-## Behavior and edge cases
+- The Cubit calls the use case, and the use case calls the `ContactsRepository` interface. Neither knows about the mock.
+- `MockContactsDataSource` loads the 30 provided contacts and adds a 500–1000 ms delay. To connect a real REST API, add another `ContactsDataSource` implementation and register it instead. The UI does not change.
 
-- Mock requests take a randomly chosen 500, 700 or 1000 ms, so overlapping requests can finish out of order. Search is case-insensitive, trims whitespace, and also matches formatted phone numbers. Filtering happens before pagination; pages contain up to 20 contacts.
-- Search debounces for 400 ms and immediately clears old results. A request ID counter (`_requestId`) invalidates old work as soon as the query changes, including during the debounce window.
-- First-page requests are coalesced while active. Next-page requests are guarded, deduplicated by contact ID, and stop when `hasMore` is false. A viewport that is taller than a page automatically requests more.
-- Pagination errors retain existing contacts and require an explicit retry of the failed page.
-- Refresh reloads page one for the current query and invalidates pending pagination. Existing contacts remain visible during refresh and on refresh failure. A successful refresh replaces the list.
-- Empty and error views support pull-to-refresh. A refresh button also works with a mouse or keyboard.
-- Disposal cancels debounce and prevents pending responses from emitting state. This is logical cancellation; the simulated network delay itself continues.
-- The appearance menu offers system, light, and dark modes. System is the default; a manual choice lasts for the app session.
+## Key behaviour
 
-## Reproduce errors
-
-Normal runs do not fail. Use a `--dart-define` (or the matching VS Code launch configuration in `.vscode/launch.json`) to exercise error states.
-
-```sh
-# Initial error, followed by successful retry
-flutter run --dart-define=MOCK_FAIL_PAGE=1
-
-# Scroll down to see a pagination error, then retry
-flutter run --dart-define=MOCK_FAIL_PAGE=2
-
-# Any request fails with the given probability (0–100), e.g. 30%
-flutter run --dart-define=MOCK_FAILURE_PERCENT=30
-```
-
-`MOCK_FAIL_PAGE` fails **once per app launch**, then retries succeed.
-
-Hot restart or restart the app to reset the failure. For an empty state, search for `Nobody here`; search `alex` for five matching contacts.
-
-## Theming
-
-`ContactsApp` receives an `AppPalette` with parent light and dark `ColorScheme`s. `AppTheme.fromScheme` builds component themes; widgets obtain colors using `Theme.of(context)`. To introduce a different brand, pass a different palette from `main.dart`. Feature widgets have no hardcoded colors.
-
-## Verify
-
-```sh
-flutter analyze
-flutter test
-flutter build ios --simulator
-```
-
-Tests cover repository filtering/pagination/serialization, debounce, out-of-order responses, duplicate requests, retries, refresh races, disposal, UI states, scrolling, pull-to-refresh, and large text.
+- **Search** is case-insensitive, matches names and phone numbers, and is debounced by 400 ms. A new query clears the old results and resets pagination.
+- **Race conditions:** every request has an ID. A response that arrives after a newer query or refresh is ignored, so it cannot overwrite newer results.
+- **Pagination** loads 20 contacts per page when you scroll near the bottom. It ignores duplicate requests and stops when there are no more pages.
+- **Pagination errors** keep the loaded contacts on screen and show a retry button.
+- **Pull-to-refresh** reloads page 1 for the current query and replaces the list.
+- **Disposal:** closing the screen cancels the debounce, and late responses are ignored.
 
 ## With another 2–3 hours
 
-Add a cancellable HTTP adapter with typed transport failures, persist the theme preference, and add device-level integration tests plus light/dark screenshot baselines. For a real service, also define its ordering and pagination consistency guarantees. Offline caching should follow explicit freshness requirements rather than silently presenting stale results.
+- Replace the mock with a real HTTP client that supports request cancellation.
+- Add local caching to show previous results while a refresh is loading.
+- Add integration tests on a real device.
+- Save the selected theme between app launches.
