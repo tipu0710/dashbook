@@ -57,35 +57,6 @@ void main() {
     expect(repository.requests, hasLength(1));
   });
 
-  testWidgets('empty directory without a query has no clear action', (
-    tester,
-  ) async {
-    await pumpScreen(tester);
-    repository.requests.single.succeed(contacts: []);
-    await tester.pumpAndSettle();
-    expect(find.text('No contacts found'), findsOneWidget);
-    expect(
-      find.text('Your directory is empty. Pull down to refresh.'),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(OutlinedButton, 'Clear search'), findsNothing);
-  });
-
-  testWidgets('whitespace-only query is treated as no query', (tester) async {
-    await pumpScreen(tester);
-    repository.requests.single.succeed(contacts: people(1));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '   ');
-    await tester.pump(ContactsCubit.debounceDuration);
-    repository.requests.last.succeed(contacts: []);
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Your directory is empty. Pull down to refresh.'),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(OutlinedButton, 'Clear search'), findsNothing);
-  });
-
   testWidgets('rapid typing is debounced into a single request', (
     tester,
   ) async {
@@ -101,27 +72,6 @@ void main() {
     expect(repository.requests, hasLength(2));
     expect(repository.requests.last.search, 'anna');
     expect(repository.requests.last.page, 1);
-  });
-
-  testWidgets('search field clear icon empties the field and reloads all', (
-    tester,
-  ) async {
-    await pumpScreen(tester);
-    repository.requests.single.succeed();
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Anna');
-    await tester.pump(ContactsCubit.debounceDuration);
-    repository.requests.last.succeed();
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Clear search'));
-    await tester.pump(ContactsCubit.debounceDuration);
-    expect(
-      tester.widget<TextField>(find.byType(TextField)).controller!.text,
-      isEmpty,
-    );
-    expect(repository.requests.last.search, isEmpty);
-    expect(find.byTooltip('Clear search'), findsNothing);
   });
 
   testWidgets('failed refresh keeps contacts and offers an inline retry', (

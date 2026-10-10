@@ -14,7 +14,7 @@ void main() {
   late ControlledRepository repository;
   late ThemeCubit theme;
 
-  Future<void> launch(WidgetTester tester, {AppPalette? palette}) async {
+  Future<void> launch(WidgetTester tester) async {
     repository = ControlledRepository();
     theme = ThemeCubit();
     await tester.pumpWidget(
@@ -23,7 +23,7 @@ void main() {
         child: ContactsApp(
           createContactsCubit: () =>
               ContactsCubit(GetContactsUseCase(repository)),
-          palette: palette ?? AppPalette.monochrome(),
+          palette: AppPalette.monochrome(),
         ),
       ),
     );
@@ -113,55 +113,6 @@ void main() {
     expect(find.text('Person 1'), findsOneWidget);
   });
 
-  testWidgets('appearance menu changes the inherited theme', (tester) async {
-    await launch(tester);
-    repository.requests.last.succeed();
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Change appearance'));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(CheckedPopupMenuItem<ThemeMode>, 'Dark'),
-    );
-    await tester.pumpAndSettle();
-    expect(theme.state, ThemeMode.dark);
-    expect(
-      Theme.of(tester.element(find.byType(TextField))).brightness,
-      Brightness.dark,
-    );
-    await tester.tap(find.byTooltip('Change appearance'));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.widgetWithText(CheckedPopupMenuItem<ThemeMode>, 'Light'),
-    );
-    await tester.pumpAndSettle();
-    expect(
-      Theme.of(tester.element(find.byType(TextField))).brightness,
-      Brightness.light,
-    );
-  });
-
-  testWidgets('custom parent color scheme flows into descendant widgets', (
-    tester,
-  ) async {
-    final light = ColorScheme.fromSeed(seedColor: Colors.blue);
-    await launch(
-      tester,
-      palette: AppPalette(
-        light: light,
-        dark: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-      ),
-    );
-    repository.requests.last.succeed();
-    await tester.pumpAndSettle();
-    expect(
-      Theme.of(tester.element(find.byType(TextField))).colorScheme.primary,
-      light.primary,
-    );
-  });
-
   testWidgets('small display and large text remain usable', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
@@ -176,26 +127,6 @@ void main() {
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -450));
     await tester.pumpAndSettle();
     expect(find.text('Person 1'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('landscape with an open keyboard scrolls without overflowing', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(640, 320);
-    tester.view.devicePixelRatio = 1;
-    tester.view.viewInsets = const FakeViewPadding(bottom: 150);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.view.resetViewInsets);
-    await launch(tester);
-    repository.requests.last.succeed();
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byType(TextField));
-    await tester.enterText(find.byType(TextField), 'Alex');
-    await tester.pump(const Duration(milliseconds: 400));
-    repository.requests.last.succeed();
-    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 }

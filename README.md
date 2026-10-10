@@ -34,13 +34,13 @@ Cubit expresses these actions through explicit methods and keeps their coordinat
 
 **Riverpod would also be a sound choice.** Its built-in dependency injection and asynchronous providers could reduce wiring, and a Notifier could hold the same coordinated state and actions. Cubit was preferred here for the direct method-based interface and explicit state transitions; this behavior does not require a graph of dependent providers.
 
-The tradeoff is additional setup through GetIt, Injectable, and generated registrations. Cubit also does **not** automatically prevent request races: the generation counter and request guards in `ContactsCubit` provide that protection. The choice reflects how this implementation organizes the app's behavior, rather than an inherent advantage in correctness, performance, or suitability for senior-level work.
+The tradeoff is additional setup through GetIt, Injectable, and generated registrations. Cubit also does **not** automatically prevent request races: the `_requestId` counter and request guards in `ContactsCubit` provide that protection. The choice reflects how this implementation organizes the app's behavior, rather than an inherent advantage in correctness or performance.
 
 ### Feature-first clean architecture
 
 ```text
 lib/
-  app/
+  core/
     di/                 GetIt + Injectable composition
     theme/              Parent palette, ThemeData factory, appearance Cubit
   features/contacts/
@@ -54,7 +54,7 @@ The dependency flow is **UI → Cubit → use case → repository contract**. Th
 ## Behavior and edge cases
 
 - Mock requests take a randomly chosen 500, 700 or 1000 ms, so overlapping requests can finish out of order. Search is case-insensitive, trims whitespace, and also matches formatted phone numbers. Filtering happens before pagination; pages contain up to 20 contacts.
-- Search debounces for 400 ms and immediately clears old results. A generation counter invalidates old work as soon as the query changes, including during the debounce window.
+- Search debounces for 400 ms and immediately clears old results. A request ID counter (`_requestId`) invalidates old work as soon as the query changes, including during the debounce window.
 - First-page requests are coalesced while active. Next-page requests are guarded, deduplicated by contact ID, and stop when `hasMore` is false. A viewport that is taller than a page automatically requests more.
 - Pagination errors retain existing contacts and require an explicit retry of the failed page.
 - Refresh reloads page one for the current query and invalidates pending pagination. Existing contacts remain visible during refresh and on refresh failure. A successful refresh replaces the list.
@@ -93,7 +93,7 @@ flutter test
 flutter build ios --simulator
 ```
 
-Tests cover repository filtering/pagination/serialization, debounce, out-of-order responses, duplicate requests, retries, refresh races, disposal, UI states, scrolling, pull-to-refresh, theme inheritance, and large text.
+Tests cover repository filtering/pagination/serialization, debounce, out-of-order responses, duplicate requests, retries, refresh races, disposal, UI states, scrolling, pull-to-refresh, and large text.
 
 ## With another 2–3 hours
 
