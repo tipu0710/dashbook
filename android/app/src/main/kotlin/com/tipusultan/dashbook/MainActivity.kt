@@ -1,4 +1,4 @@
-package com.example.rocket_phone_contact
+package com.tipusultan.dashbook
 
 import io.flutter.embedding.android.FlutterActivity
 
