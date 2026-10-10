@@ -18,7 +18,7 @@ class ContactsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocBuilder<ThemeCubit, ThemeMode>(
     builder: (context, mode) => MaterialApp(
-      title: 'Rocket Contacts',
+      title: 'Dashbook',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.fromScheme(palette.light),
       darkTheme: AppTheme.fromScheme(palette.dark),

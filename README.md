@@ -1,4 +1,4 @@
-# Rocket Contacts
+# Dashbook
 
 A searchable contacts list with pagination, pull-to-refresh, and loading, empty and error states, backed by a mock API.
 

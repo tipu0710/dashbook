@@ -45,7 +45,7 @@ class ContactsHeader extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'ROCKET / CONTACTS',
+                    'DASHBOOK',
                     style: theme.textTheme.labelMedium?.copyWith(
                       letterSpacing: 1.8,
                       fontWeight: FontWeight.w700,
