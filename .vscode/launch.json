@@ -5,12 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "rocket_phone_contact",
+            "name": "dashbook",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "rocket_phone_contact (initial load error)",
+            "name": "dashbook (initial load error)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
@@ -19,7 +19,7 @@
             ]
         },
         {
-            "name": "rocket_phone_contact (pagination error)",
+            "name": "dashbook (pagination error)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
@@ -28,7 +28,7 @@
             ]
         },
         {
-            "name": "rocket_phone_contact (30% random failures)",
+            "name": "dashbook (30% random failures)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
@@ -37,13 +37,13 @@
             ]
         },
         {
-            "name": "rocket_phone_contact (profile mode)",
+            "name": "dashbook (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "rocket_phone_contact (release mode)",
+            "name": "dashbook (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
